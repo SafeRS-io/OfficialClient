@@ -25,8 +25,6 @@
 
 package net.runelite.client.plugins.bank;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import net.runelite.api.Client;
 import net.runelite.api.ScriptID;
 import net.runelite.api.VarClientInt;
@@ -36,6 +34,9 @@ import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import org.apache.commons.lang3.ArrayUtils;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class BankSearch

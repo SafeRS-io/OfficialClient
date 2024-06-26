@@ -55,6 +55,10 @@ public class TitheFarmPlugin extends Plugin
 	@Inject
 	private TitheFarmPlantOverlay titheFarmOverlay;
 
+	@Inject
+	private WorldPointMinimapOverlay worldPointMinimapOverlay;
+
+
 	@Getter
 	private final Set<TitheFarmPlant> plants = new HashSet<>();
 
@@ -68,6 +72,7 @@ public class TitheFarmPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		overlayManager.add(titheFarmOverlay);
+		overlayManager.add(worldPointMinimapOverlay);
 		titheFarmOverlay.updateConfig();
 	}
 
@@ -75,6 +80,7 @@ public class TitheFarmPlugin extends Plugin
 	protected void shutDown() throws Exception
 	{
 		overlayManager.remove(titheFarmOverlay);
+		overlayManager.remove(worldPointMinimapOverlay);
 	}
 
 	@Subscribe

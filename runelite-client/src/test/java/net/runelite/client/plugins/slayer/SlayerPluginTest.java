@@ -249,12 +249,12 @@ public class SlayerPluginTest
 		when(client.getVarpValue(VarPlayer.SLAYER_TASK_SIZE)).thenReturn(42);
 		when(client.getVarpValue(VarPlayer.SLAYER_TASK_CREATURE)).thenReturn(1);
 		when(client.getEnum(EnumID.SLAYER_TASK_CREATURE))
-			.thenAnswer(a ->
-			{
-				EnumComposition e = mock(EnumComposition.class);
-				when(e.getStringValue(anyInt())).thenReturn("mocked npc");
-				return e;
-			});
+				.thenAnswer(a ->
+				{
+					EnumComposition e = mock(EnumComposition.class);
+					when(e.getStringValue(anyInt())).thenReturn("mocked npc");
+					return e;
+				});
 
 		VarbitChanged varbitChanged = new VarbitChanged();
 		varbitChanged.setVarpId(VarPlayer.SLAYER_TASK_SIZE);
@@ -302,12 +302,12 @@ public class SlayerPluginTest
 		when(client.getVarpValue(VarPlayer.SLAYER_TASK_SIZE)).thenReturn(42);
 		when(client.getVarpValue(VarPlayer.SLAYER_TASK_CREATURE)).thenReturn(1);
 		when(client.getEnum(EnumID.SLAYER_TASK_CREATURE))
-			.thenAnswer(a ->
-			{
-				EnumComposition e = mock(EnumComposition.class);
-				when(e.getStringValue(anyInt())).thenReturn("mocked npc");
-				return e;
-			});
+				.thenAnswer(a ->
+				{
+					EnumComposition e = mock(EnumComposition.class);
+					when(e.getStringValue(anyInt())).thenReturn("mocked npc");
+					return e;
+				});
 
 		// initial amount is fetched from config at sync
 		when(configManager.getRSProfileConfiguration("slayer", "initialAmount", int.class)).thenReturn(99);

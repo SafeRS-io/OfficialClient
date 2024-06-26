@@ -34,6 +34,7 @@ import net.runelite.api.ItemID;
 import net.runelite.api.NullItemID;
 
 @Getter
+public
 enum Task
 {
 	//<editor-fold desc="Enums">

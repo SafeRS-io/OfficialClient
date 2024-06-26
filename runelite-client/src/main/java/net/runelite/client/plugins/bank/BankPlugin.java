@@ -31,30 +31,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.inject.Provides;
-import java.awt.event.KeyEvent;
-import java.text.ParseException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.annotation.Nullable;
-import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.InventoryID;
-import net.runelite.api.Item;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.ItemContainer;
-import net.runelite.api.ItemID;
-import net.runelite.api.MenuEntry;
-import net.runelite.api.ScriptID;
-import net.runelite.api.VarClientInt;
-import net.runelite.api.VarClientStr;
+import net.runelite.api.*;
 import net.runelite.api.annotations.Component;
-import net.runelite.api.events.ItemContainerChanged;
-import net.runelite.api.events.MenuEntryAdded;
-import net.runelite.api.events.MenuShouldLeftClick;
-import net.runelite.api.events.ScriptCallbackEvent;
-import net.runelite.api.events.ScriptPostFired;
-import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.events.*;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.JavaScriptCallback;
@@ -68,7 +48,15 @@ import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.QuantityFormatter;
+
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import java.awt.event.KeyEvent;
+import java.text.ParseException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @PluginDescriptor(
 	name = "Bank",
@@ -98,6 +86,11 @@ public class BankPlugin extends Plugin
 
 	@Inject
 	private ItemManager itemManager;
+
+	@Inject
+	private OverlayManager overlayManager;
+	@Inject
+	private SearchHighlightOverlay searchHighlightOverlay;
 
 	@Inject
 	private BankConfig config;
@@ -191,12 +184,15 @@ public class BankPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		overlayManager.add(searchHighlightOverlay);
 		keyManager.registerKeyListener(searchHotkeyListener);
 	}
 
 	@Override
 	protected void shutDown()
 	{
+		overlayManager.remove(searchHighlightOverlay);
+
 		keyManager.unregisterKeyListener(searchHotkeyListener);
 		clientThread.invokeLater(() -> bankSearch.reset(false));
 		forceRightClickFlag = false;
@@ -292,6 +288,7 @@ public class BankPlugin extends Plugin
 				break;
 			}
 		}
+
 	}
 
 	@Subscribe
@@ -459,6 +456,16 @@ public class BankPlugin extends Plugin
 	@VisibleForTesting
 	boolean valueSearch(final int itemId, final String str)
 	{
+		if (str.startsWith("id:")) {
+			try {
+				int searchId = Integer.parseInt(str.substring(3).trim());
+				return itemId == searchId;
+			} catch (NumberFormatException e) {
+				log.warn("Invalid ID format in search query", e);
+				return false;
+			}
+		}
+
 		final Matcher matcher = VALUE_SEARCH_PATTERN.matcher(str);
 		if (!matcher.matches())
 		{

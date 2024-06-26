@@ -39,7 +39,7 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
 import net.runelite.client.ui.overlay.components.TextComponent;
 
-class SlayerOverlay extends WidgetItemOverlay
+public class SlayerOverlay extends WidgetItemOverlay
 {
 	private final static Set<Integer> SLAYER_JEWELRY = ImmutableSet.copyOf(ItemVariationMapping.getVariations(ItemID.SLAYER_RING_8));
 

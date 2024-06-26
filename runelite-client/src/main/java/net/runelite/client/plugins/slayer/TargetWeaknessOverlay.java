@@ -41,7 +41,7 @@ import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayUtil;
 
-class TargetWeaknessOverlay extends Overlay
+public class TargetWeaknessOverlay extends Overlay
 {
 	private final Client client;
 	private final SlayerConfig config;
