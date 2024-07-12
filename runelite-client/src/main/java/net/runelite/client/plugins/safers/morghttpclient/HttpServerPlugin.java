@@ -30,7 +30,13 @@ import net.runelite.http.api.RuneLiteAPI;
 import okhttp3.OkHttpClient;
 
 import javax.inject.Inject;
+import java.awt.*;
+import java.awt.Point;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -121,6 +127,9 @@ public class HttpServerPlugin extends Plugin
 		server.createContext("/bank", this::handleBank);
 		server.createContext("/npcs", this::handleNpcs);
 		server.createContext("/objects", this::handleObjects);
+		server.createContext("/click", this::handleMouseClick);
+		server.createContext("/move", this::handleMouseMove);
+
 		server.setExecutor(Executors.newSingleThreadExecutor());
 		startTime = System.currentTimeMillis();
 		xp_gained_skills = new int[Skill.values().length];
@@ -136,6 +145,112 @@ public class HttpServerPlugin extends Plugin
 			skill_count++;
 		}
 	}
+
+	public void handleMouseMove(HttpExchange exchange) throws IOException {
+		if ("POST".equals(exchange.getRequestMethod())) {
+			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+			String requestBody = sb.toString();
+			JsonObject json = gson.fromJson(requestBody, JsonObject.class);
+			JsonArray coordinates = json.getAsJsonArray("coordinates");
+			int x = coordinates.get(0).getAsInt();
+			int y = coordinates.get(1).getAsInt();
+
+			invokeAndWait(() -> {
+				EventQueue.invokeLater(() -> {
+					final Canvas target = client.getCanvas();
+					Point canvasLocation = target.getLocationOnScreen();
+					int adjustedX = x - canvasLocation.x;
+					int adjustedY = y - canvasLocation.y;
+
+					long time = System.currentTimeMillis();
+					MouseEvent move = new MouseEvent(target, MouseEvent.MOUSE_MOVED, time, 0, adjustedX, adjustedY, 0, false, MouseEvent.NOBUTTON);
+					target.dispatchEvent(move);
+
+					try {
+						Thread.sleep(50); // Add a delay of 50 milliseconds after moving the mouse
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				});
+				return null;
+			});
+
+			exchange.sendResponseHeaders(200, 0);
+		} else {
+			exchange.sendResponseHeaders(405, 0); // Method Not Allowed
+		}
+		exchange.close();
+	}
+
+
+	public void handleMouseClick(HttpExchange exchange) throws IOException {
+		if ("POST".equals(exchange.getRequestMethod())) {
+			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+			String requestBody = sb.toString();
+			JsonObject json = gson.fromJson(requestBody, JsonObject.class);
+			JsonArray coordinates = json.getAsJsonArray("coordinates");
+			int x = coordinates.get(0).getAsInt();
+			int y = coordinates.get(1).getAsInt();
+
+			invokeAndWait(() -> {
+				EventQueue.invokeLater(() -> {
+					final Canvas target = client.getCanvas();
+					Point canvasLocation = target.getLocationOnScreen();
+					int adjustedX = x - canvasLocation.x;
+					int adjustedY = y - canvasLocation.y;
+
+					try {
+						// Simulate mouse press
+						long time = System.currentTimeMillis();
+						MouseEvent press = new MouseEvent(target, MouseEvent.MOUSE_PRESSED, time, InputEvent.BUTTON1_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON1);
+						target.dispatchEvent(press);
+						Thread.sleep(20); // Add a delay of 20 milliseconds
+
+						// Simulate mouse release
+						time = System.currentTimeMillis();
+						MouseEvent release = new MouseEvent(target, MouseEvent.MOUSE_RELEASED, time, 0, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON1);
+						target.dispatchEvent(release);
+						Thread.sleep(35); // Add a delay of 20 milliseconds
+
+						// Simulate mouse click
+						time = System.currentTimeMillis();
+						MouseEvent click = new MouseEvent(target, MouseEvent.MOUSE_CLICKED, time, 0, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON1);
+						target.dispatchEvent(click);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				});
+				return null;
+			});
+
+			exchange.sendResponseHeaders(200, 0);
+		} else {
+			exchange.sendResponseHeaders(405, 0); // Method Not Allowed
+		}
+		exchange.close();
+	}
+
+
+
+
+
+
+
+
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
