@@ -33,11 +33,13 @@ import javax.inject.Inject;
 import java.awt.*;
 import java.awt.Point;
 import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.List;
@@ -98,7 +100,7 @@ public class HttpServerPlugin extends Plugin
 	// Miscellaneous
 	public int[] xp_gained_skills;
 	public String msg;
-
+	private Robot robot;
 	@Provides
 	private HttpServerConfig provideConfig(ConfigManager configManager)
 	{
@@ -108,6 +110,12 @@ public class HttpServerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
+		try {
+			robot = new Robot();
+		} catch (AWTException e) {
+			e.printStackTrace();
+		}
+
 		slc = new StatusSocketClient(client, httpClient, gson, itemManager, config);
 
 		//MAX_DISTANCE = config.reachedDistance();
@@ -127,8 +135,13 @@ public class HttpServerPlugin extends Plugin
 		server.createContext("/bank", this::handleBank);
 		server.createContext("/npcs", this::handleNpcs);
 		server.createContext("/objects", this::handleObjects);
+		server.createContext("/tiles", this::handleTiles);
 		server.createContext("/click", this::handleMouseClick);
 		server.createContext("/move", this::handleMouseMove);
+		server.createContext("/keypress", this::handleKeyPress); // Add new endpoint for keypress
+		server.createContext("/keydown", this::handleKeyDown); // New endpoint for key down
+		server.createContext("/keyup", this::handleKeyUp); // New endpoint for key up
+		server.createContext("/stringInput", this::handleStringInput); // Add new context
 
 		server.setExecutor(Executors.newSingleThreadExecutor());
 		startTime = System.currentTimeMillis();
@@ -145,6 +158,43 @@ public class HttpServerPlugin extends Plugin
 			skill_count++;
 		}
 	}
+
+	public void handleKeyPress(HttpExchange exchange) throws IOException {
+		if ("POST".equals(exchange.getRequestMethod())) {
+			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+			String requestBody = sb.toString();
+			JsonObject json = gson.fromJson(requestBody, JsonObject.class);
+			int keyCode = json.get("keyCode").getAsInt();
+
+			invokeAndWait(() -> {
+				EventQueue.invokeLater(() -> {
+					final Canvas target = client.getCanvas();
+
+						long time = System.currentTimeMillis();
+						KeyEvent press = new KeyEvent(target, KeyEvent.KEY_PRESSED, time, 0, keyCode, KeyEvent.CHAR_UNDEFINED);
+						target.dispatchEvent(press);
+						KeyEvent release = new KeyEvent(target, KeyEvent.KEY_RELEASED, time, 0, keyCode, KeyEvent.CHAR_UNDEFINED);
+						target.dispatchEvent(release);
+
+
+				});
+				return null;
+			});
+
+			exchange.sendResponseHeaders(200, 0);
+		} else {
+			exchange.sendResponseHeaders(405, 0); // Method Not Allowed
+		}
+		exchange.close();
+	}
+
 
 	public void handleMouseMove(HttpExchange exchange) throws IOException {
 		if ("POST".equals(exchange.getRequestMethod())) {
@@ -174,7 +224,7 @@ public class HttpServerPlugin extends Plugin
 					target.dispatchEvent(move);
 
 					try {
-						Thread.sleep(50); // Add a delay of 50 milliseconds after moving the mouse
+						Thread.sleep(40); // Add a delay of 50 milliseconds after moving the mouse
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -190,6 +240,129 @@ public class HttpServerPlugin extends Plugin
 	}
 
 
+	public void handleKeyDown(HttpExchange exchange) throws IOException {
+		if ("POST".equals(exchange.getRequestMethod())) {
+			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+			String requestBody = sb.toString();
+			JsonObject json = gson.fromJson(requestBody, JsonObject.class);
+			int keyCode = json.get("keyCode").getAsInt();
+			char keyChar = (char) json.get("keyChar").getAsInt();
+
+			log.info("Received keydown event with keyCode: " + keyCode);
+
+			invokeAndWait(() -> {
+				EventQueue.invokeLater(() -> {
+					final Canvas target = client.getCanvas();
+					long time = System.currentTimeMillis();
+
+					KeyEvent press = new KeyEvent(target, KeyEvent.KEY_PRESSED, time, 0, keyCode, keyChar);
+					target.dispatchEvent(press);
+					log.info("Key Pressed: " + press.toString());
+				});
+				return null;
+			});
+
+			exchange.sendResponseHeaders(200, 0);
+		} else {
+			exchange.sendResponseHeaders(405, 0); // Method Not Allowed
+		}
+		exchange.close();
+	}
+
+	public void handleKeyUp(HttpExchange exchange) throws IOException {
+		if ("POST".equals(exchange.getRequestMethod())) {
+			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+			String requestBody = sb.toString();
+			JsonObject json = gson.fromJson(requestBody, JsonObject.class);
+			int keyCode = json.get("keyCode").getAsInt();
+			char keyChar = (char) json.get("keyChar").getAsInt();
+
+			log.info("Received keyup event with keyCode: " + keyCode);
+
+			invokeAndWait(() -> {
+				EventQueue.invokeLater(() -> {
+					final Canvas target = client.getCanvas();
+					long time = System.currentTimeMillis();
+
+					KeyEvent release = new KeyEvent(target, KeyEvent.KEY_RELEASED, time, 0, keyCode, keyChar);
+					target.dispatchEvent(release);
+					log.info("Key Released: " + release.toString());
+				});
+				return null;
+			});
+
+			exchange.sendResponseHeaders(200, 0);
+		} else {
+			exchange.sendResponseHeaders(405, 0); // Method Not Allowed
+		}
+		exchange.close();
+	}
+
+
+	public void handleStringInput(HttpExchange exchange) throws IOException {
+		if ("POST".equals(exchange.getRequestMethod())) {
+			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+			String requestBody = sb.toString();
+			JsonObject json = gson.fromJson(requestBody, JsonObject.class);
+			String inputString = json.get("inputString").getAsString();
+
+			invokeAndWait(() -> {
+				EventQueue.invokeLater(() -> {
+					final Canvas target = client.getCanvas();
+					long time = System.currentTimeMillis();
+
+					for (char c : inputString.toCharArray()) {
+						int keyCode = KeyEvent.getExtendedKeyCodeForChar(c);
+						KeyEvent press = new KeyEvent(target, KeyEvent.KEY_PRESSED, time, 0, keyCode, c);
+						target.dispatchEvent(press);
+
+						KeyEvent typed = new KeyEvent(target, KeyEvent.KEY_TYPED, time, 0, KeyEvent.VK_UNDEFINED, c);
+						target.dispatchEvent(typed);
+
+						KeyEvent release = new KeyEvent(target, KeyEvent.KEY_RELEASED, time, 0, keyCode, c);
+						target.dispatchEvent(release);
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							throw new RuntimeException(e);
+						}
+
+						// Log the events
+						log.info("Key Pressed: " + press.toString());
+						log.info("Key Typed: " + typed.toString());
+						log.info("Key Released: " + release.toString());
+					}
+				});
+				return null;
+			});
+
+			exchange.sendResponseHeaders(200, 0);
+		} else {
+			exchange.sendResponseHeaders(405, 0); // Method Not Allowed
+		}
+		exchange.close();
+	}
 	public void handleMouseClick(HttpExchange exchange) throws IOException {
 		if ("POST".equals(exchange.getRequestMethod())) {
 			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
@@ -218,13 +391,13 @@ public class HttpServerPlugin extends Plugin
 						long time = System.currentTimeMillis();
 						MouseEvent press = new MouseEvent(target, MouseEvent.MOUSE_PRESSED, time, InputEvent.BUTTON1_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON1);
 						target.dispatchEvent(press);
-						Thread.sleep(20); // Add a delay of 20 milliseconds
+						Thread.sleep(5); // Add a delay of 20 milliseconds
 
 						// Simulate mouse release
 						time = System.currentTimeMillis();
 						MouseEvent release = new MouseEvent(target, MouseEvent.MOUSE_RELEASED, time, 0, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON1);
 						target.dispatchEvent(release);
-						Thread.sleep(35); // Add a delay of 20 milliseconds
+						Thread.sleep(5); // Add a delay of 20 milliseconds
 
 						// Simulate mouse click
 						time = System.currentTimeMillis();
