@@ -110,11 +110,6 @@ public class HttpServerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		try {
-			robot = new Robot();
-		} catch (AWTException e) {
-			e.printStackTrace();
-		}
 
 		slc = new StatusSocketClient(client, httpClient, gson, itemManager, config);
 
@@ -137,6 +132,7 @@ public class HttpServerPlugin extends Plugin
 		server.createContext("/objects", this::handleObjects);
 		server.createContext("/tiles", this::handleTiles);
 		server.createContext("/click", this::handleMouseClick);
+		server.createContext("/rightclick", this::handlerightMouseClick);
 		server.createContext("/move", this::handleMouseMove);
 		server.createContext("/keypress", this::handleKeyPress); // Add new endpoint for keypress
 		server.createContext("/keydown", this::handleKeyDown); // New endpoint for key down
@@ -418,6 +414,60 @@ public class HttpServerPlugin extends Plugin
 	}
 
 
+	public void handlerightMouseClick(HttpExchange exchange) throws IOException {
+		if ("POST".equals(exchange.getRequestMethod())) {
+			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+			String requestBody = sb.toString();
+			JsonObject json = gson.fromJson(requestBody, JsonObject.class);
+			JsonArray coordinates = json.getAsJsonArray("coordinates");
+			int x = coordinates.get(0).getAsInt();
+			int y = coordinates.get(1).getAsInt();
+
+			invokeAndWait(() -> {
+				EventQueue.invokeLater(() -> {
+					final Canvas target = client.getCanvas();
+					Point canvasLocation = target.getLocationOnScreen();
+					int adjustedX = x - canvasLocation.x;
+					int adjustedY = y - canvasLocation.y;
+
+					try {
+						// Simulate mouse press
+						long time = System.currentTimeMillis();
+
+						MouseEvent press = new MouseEvent(target, MouseEvent.MOUSE_PRESSED, time, InputEvent.META_DOWN_MASK + InputEvent.BUTTON3_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON3);
+						target.dispatchEvent(press);
+						Thread.sleep(5); // Add a delay of 5 milliseconds
+
+						// Simulate mouse release
+						time = System.currentTimeMillis();
+						MouseEvent release = new MouseEvent(target, MouseEvent.MOUSE_RELEASED, time, InputEvent.META_DOWN_MASK + InputEvent.BUTTON3_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON3);
+						target.dispatchEvent(release);
+						Thread.sleep(5); // Add a delay of 5 milliseconds
+
+						// Simulate mouse click
+						time = System.currentTimeMillis();
+						MouseEvent click = new MouseEvent(target, MouseEvent.MOUSE_CLICKED, time, InputEvent.META_DOWN_MASK + InputEvent.BUTTON3_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON3);
+						target.dispatchEvent(click);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				});
+				return null;
+			});
+
+			exchange.sendResponseHeaders(200, 0);
+		} else {
+			exchange.sendResponseHeaders(405, 0); // Method Not Allowed
+		}
+		exchange.close();
+	}
 
 
 
