@@ -100,7 +100,6 @@ public class HttpServerPlugin extends Plugin
 	// Miscellaneous
 	public int[] xp_gained_skills;
 	public String msg;
-	private Robot robot;
 	@Provides
 	private HttpServerConfig provideConfig(ConfigManager configManager)
 	{
@@ -130,7 +129,6 @@ public class HttpServerPlugin extends Plugin
 		server.createContext("/bank", this::handleBank);
 		server.createContext("/npcs", this::handleNpcs);
 		server.createContext("/objects", this::handleObjects);
-		server.createContext("/tiles", this::handleTiles);
 		server.createContext("/click", this::handleMouseClick);
 		server.createContext("/rightclick", this::handlerightMouseClick);
 		server.createContext("/move", this::handleMouseMove);
