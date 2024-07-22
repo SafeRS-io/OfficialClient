@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @PluginDescriptor(
 	name = "SafeRS API",
 	description = "SafeRS API",
-	tags = {"status", "stats"},
+	tags = {"status", "stats", "api"},
 	enabledByDefault = true
 )
 @Slf4j
@@ -90,6 +90,8 @@ public class HttpServerPlugin extends Plugin
 	public StatusSocketClient slc;
 	public HttpServer server;
 	public TileTracker tileTracker;
+	private static int storedId;
+	private static Runnable idChangeListener;
 
 	// Timing and counts
 	public int tickCount = 0;
@@ -136,6 +138,8 @@ public class HttpServerPlugin extends Plugin
 		server.createContext("/keydown", this::handleKeyDown); // New endpoint for key down
 		server.createContext("/keyup", this::handleKeyUp); // New endpoint for key up
 		server.createContext("/stringInput", this::handleStringInput); // Add new context
+		server.createContext("/setId", this::handleSetId);
+		server.createContext("/graphicsobjects", this::handleGraphicsObjects);
 
 		server.setExecutor(Executors.newSingleThreadExecutor());
 		startTime = System.currentTimeMillis();
@@ -152,6 +156,94 @@ public class HttpServerPlugin extends Plugin
 			skill_count++;
 		}
 	}
+
+	public void handleGraphicsObjects(HttpExchange exchange) throws IOException {
+		log.info("handleGraphicsObjects called");
+
+		JsonArray graphicsObjectsArray = invokeAndWait(() -> {
+			JsonArray array = new JsonArray();
+
+			for (GraphicsObject graphicsObject : client.getGraphicsObjects()) {
+				JsonObject object = new JsonObject();
+				LocalPoint lp = graphicsObject.getLocation();
+				Polygon poly = Perspective.getCanvasTilePoly(client, lp);
+
+				if (poly != null) {
+					WorldPoint wp;
+					if (client.isInInstancedRegion()) {
+						wp = WorldPoint.fromLocalInstance(client, lp);
+					} else {
+						wp = WorldPoint.fromLocal(client, lp);
+					}
+
+					if (wp != null) {
+						log.info("GraphicsObject ID: {}, LocalPoint: {}, WorldPoint: {}", graphicsObject.getId(), lp, wp);
+						object.addProperty("id", graphicsObject.getId());
+						object.addProperty("x", wp.getX());
+						object.addProperty("y", wp.getY());
+						object.addProperty("startCycle", graphicsObject.getStartCycle());
+						if (graphicsObject.getAnimation() != null) {
+							object.addProperty("animation", graphicsObject.getAnimation().getId());
+						} else {
+							log.warn("Graphics object with id {} has null animation", graphicsObject.getId());
+							object.addProperty("animation", "null");
+						}
+						array.add(object);
+					} else {
+						log.warn("WorldPoint conversion failed for graphics object with id {}", graphicsObject.getId());
+					}
+				} else {
+					log.warn("Polygon is null for graphics object with id {}", graphicsObject.getId());
+				}
+			}
+			return array;
+		});
+
+		log.info("Graphics objects: {}", graphicsObjectsArray);
+
+		exchange.sendResponseHeaders(200, 0);
+		try (OutputStreamWriter out = new OutputStreamWriter(exchange.getResponseBody())) {
+			RuneLiteAPI.GSON.toJson(graphicsObjectsArray, out);
+		}
+	}
+
+	public static void setStoredId(int id) {
+		storedId = id;
+		if (idChangeListener != null) {
+			idChangeListener.run();
+		}
+	}
+
+	public static void clearStoredId() {
+		storedId = 0;
+	}
+	public static int getStoredId() {
+		return storedId;
+	}
+	public void handleSetId(HttpExchange exchange) throws IOException {
+		if ("POST".equals(exchange.getRequestMethod())) {
+			InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+
+			String requestBody = sb.toString();
+			JsonObject json = gson.fromJson(requestBody, JsonObject.class);
+			setStoredId(json.get("id").getAsInt());
+
+			log.info("Received ID: " + storedId);
+
+			exchange.sendResponseHeaders(200, 0);
+		} else {
+			exchange.sendResponseHeaders(405, 0); // Method Not Allowed
+		}
+		exchange.close();
+	}
+
+
 
 	public void handleKeyPress(HttpExchange exchange) throws IOException {
 		if ("POST".equals(exchange.getRequestMethod())) {

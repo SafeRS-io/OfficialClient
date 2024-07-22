@@ -47,7 +47,8 @@ import javax.inject.Inject;
 @PluginDescriptor(
 	name = "<html><font color=#3076DF>[SafeRS] </font>Pray Flicker</html>",
 	description = "Auto prayer flicker",
-	tags = {"combat", "flicking", "overlay"}
+	tags = {"combat", "flicking", "overlay"},
+	enabledByDefault = false
 )
 public class PrayerFlickerPlugin extends Plugin
 {

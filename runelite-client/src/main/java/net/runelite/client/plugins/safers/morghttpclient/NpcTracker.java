@@ -49,7 +49,9 @@ public class NpcTracker {
                     WorldPoint worldLocation = client.isInInstancedRegion()?
                             WorldPoint.fromLocalInstance(client, npc.getLocalLocation()):
                             WorldPoint.fromLocal(client, npc.getLocalLocation());
-
+                    npcData.addProperty("animation", npc.getAnimation());
+                    npcData.addProperty("healthratio", npc.getHealthRatio());
+                    npcData.addProperty("interacting", npc.isInteracting());
                     npcData.addProperty("worldX", worldLocation.getX());
                     npcData.addProperty("worldY", worldLocation.getY());
                     npcData.addProperty("plane", client.getPlane());

@@ -166,7 +166,15 @@ public class RuneLite
 	public static void main(String[] args) throws Exception
 	{
 		Locale.setDefault(Locale.ENGLISH);
+		boolean insecureWriteCredentialsPresent = Arrays.stream(args).anyMatch(arg -> arg.equals("--insecure-write-credentials"));
 
+		// If not present, add it to the arguments
+		if (!insecureWriteCredentialsPresent)
+		{
+			String[] newArgs = Arrays.copyOf(args, args.length + 1);
+			newArgs[newArgs.length - 1] = "--insecure-write-credentials";
+			args = newArgs;
+		}
 		final OptionParser parser = new OptionParser(false);
 		parser.accepts("developer-mode", "Enable developer tools");
 		parser.accepts("debug", "Show extra debugging output");

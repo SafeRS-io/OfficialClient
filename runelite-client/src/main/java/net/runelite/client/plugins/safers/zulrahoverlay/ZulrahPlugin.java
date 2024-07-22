@@ -88,7 +88,8 @@ public class ZulrahPlugin extends Plugin implements KeyListener
 
 	@Inject
 	private FairyRingObjectOverlay fairyRingObjectOverlay;
-
+	@Inject
+	private FairyRingObjectOverlay fairyRingObjectOverlay2;
 	@Inject
 	private ZulrahBoatOverlay zulrahBoatOverlay;
 
@@ -174,6 +175,7 @@ public class ZulrahPlugin extends Plugin implements KeyListener
 			overlayManager.add(zulrahPanelOverlay);
 			lootOverlay = new LootOverlay(client, itemLocations, config);
 			overlayManager.add(fairyRingObjectOverlay);
+			overlayManager.add(fairyRingObjectOverlay2);
 			overlayManager.add(housePoolOverlay);
 			overlayManager.add(lootOverlay);
 			overlayManager.add(teleBoxOverlay);
@@ -212,6 +214,7 @@ public class ZulrahPlugin extends Plugin implements KeyListener
 		overlayManager.add(worldPointMinimapOverlay);
 		overlayManager.add(fairyringoverlay);
 		overlayManager.add(fairyRingObjectOverlay);
+		overlayManager.add(fairyRingObjectOverlay2);
 		overlayManager.add(worldPointMarkerOverlay);
 
 		keyManager.registerKeyListener(this);
@@ -238,6 +241,7 @@ public class ZulrahPlugin extends Plugin implements KeyListener
 		overlayManager.remove(worldPointMinimapOverlay);
 		overlayManager.remove(fairyringoverlay);
 		overlayManager.remove(fairyRingObjectOverlay);
+		overlayManager.add(fairyRingObjectOverlay2);
 		overlayManager.remove(worldPointMarkerOverlay);
 		overlayManager.remove(recoiloverlay);
 		keyManager.unregisterKeyListener(this);
@@ -273,6 +277,7 @@ public class ZulrahPlugin extends Plugin implements KeyListener
 		overlayManager.add(worldPointMinimapOverlay);
 		overlayManager.add(fairyringoverlay);
 		overlayManager.add(fairyRingObjectOverlay);
+		overlayManager.add(fairyRingObjectOverlay2);
 		overlayManager.add(worldPointMarkerOverlay);
 		overlayManager.add(recoiloverlay);
 

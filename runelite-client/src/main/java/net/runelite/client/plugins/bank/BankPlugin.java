@@ -26,7 +26,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package net.runelite.client.plugins.bank;
-
+import net.runelite.client.plugins.safers.morghttpclient.HttpServerPlugin;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
@@ -55,6 +55,9 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.awt.event.KeyEvent;
 import java.text.ParseException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -91,7 +94,7 @@ public class BankPlugin extends Plugin
 	private OverlayManager overlayManager;
 	@Inject
 	private SearchHighlightOverlay searchHighlightOverlay;
-
+	private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 	@Inject
 	private BankConfig config;
 
@@ -186,6 +189,7 @@ public class BankPlugin extends Plugin
 	{
 		overlayManager.add(searchHighlightOverlay);
 		keyManager.registerKeyListener(searchHotkeyListener);
+		scheduler.scheduleAtFixedRate(this::checkForApiUpdates, 0, 50, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -198,6 +202,19 @@ public class BankPlugin extends Plugin
 		forceRightClickFlag = false;
 		itemQuantities = null;
 		searchString = null;
+		scheduler.shutdown();
+	}
+
+	private void checkForApiUpdates()
+	{
+		clientThread.invoke(() -> {
+			int storedId = HttpServerPlugin.getStoredId();
+			if (storedId != 0)
+			{
+				HttpServerPlugin.clearStoredId();
+				applyBankSearchFilter("id:" + storedId);
+			}
+		});
 	}
 
 	@Subscribe
@@ -294,6 +311,7 @@ public class BankPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
+		
 		if (event.getGroupId() == InterfaceID.SEED_VAULT && config.seedVaultValue())
 		{
 			clientThread.invokeLater(this::updateSeedVaultTotal);
@@ -323,6 +341,15 @@ public class BankPlugin extends Plugin
 	{
 		if (event.getScriptId() == ScriptID.BANKMAIN_BUILD)
 		{
+
+			int storedId = HttpServerPlugin.getStoredId();
+			if (storedId != 0)
+			{
+				HttpServerPlugin.clearStoredId();
+
+				applyBankSearchFilter("id:" + storedId);
+			}
+
 			ContainerPrices price = getWidgetContainerPrices(ComponentID.BANK_ITEM_CONTAINER, InventoryID.BANK);
 			if (price == null)
 			{
@@ -416,7 +443,14 @@ public class BankPlugin extends Plugin
 
 		return stringBuilder.toString();
 	}
-
+	private void applyBankSearchFilter(String searchString)
+	{
+		clientThread.invokeLater(() -> {
+			client.setVarcStrValue(VarClientStr.INPUT_TEXT, searchString);
+			bankSearch.layoutBank();
+			// Force bank layout update
+		});
+	}
 	private void updateSeedVaultTotal()
 	{
 		final Widget titleContainer = client.getWidget(ComponentID.SEED_VAULT_TITLE_CONTAINER);

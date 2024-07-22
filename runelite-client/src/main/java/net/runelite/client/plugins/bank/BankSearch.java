@@ -69,6 +69,7 @@ public class BankSearch
 		}
 
 		client.runScript(scriptArgs);
+
 	}
 
 	public void initSearch()
