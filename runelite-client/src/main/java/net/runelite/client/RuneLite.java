@@ -165,8 +165,11 @@ public class RuneLite
 
 	public static void main(String[] args) throws Exception
 	{
+
 		Locale.setDefault(Locale.ENGLISH);
+
 		boolean insecureWriteCredentialsPresent = Arrays.stream(args).anyMatch(arg -> arg.equals("--insecure-write-credentials"));
+
 
 		// If not present, add it to the arguments
 		if (!insecureWriteCredentialsPresent)

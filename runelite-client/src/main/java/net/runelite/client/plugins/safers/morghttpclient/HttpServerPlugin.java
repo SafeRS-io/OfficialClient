@@ -308,7 +308,7 @@ public class HttpServerPlugin extends Plugin
 					long time = System.currentTimeMillis();
 					MouseEvent move = new MouseEvent(target, MouseEvent.MOUSE_MOVED, time, 0, adjustedX, adjustedY, 0, false, MouseEvent.NOBUTTON);
 					target.dispatchEvent(move);
-
+					move.consume();
 					try {
 						Thread.sleep(40); // Add a delay of 50 milliseconds after moving the mouse
 					} catch (InterruptedException e) {
@@ -477,18 +477,20 @@ public class HttpServerPlugin extends Plugin
 						long time = System.currentTimeMillis();
 						MouseEvent press = new MouseEvent(target, MouseEvent.MOUSE_PRESSED, time, InputEvent.BUTTON1_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON1);
 						target.dispatchEvent(press);
+						press.consume();
 						Thread.sleep(5); // Add a delay of 20 milliseconds
-
 						// Simulate mouse release
 						time = System.currentTimeMillis();
 						MouseEvent release = new MouseEvent(target, MouseEvent.MOUSE_RELEASED, time, 0, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON1);
 						target.dispatchEvent(release);
+						release.consume();
 						Thread.sleep(5); // Add a delay of 20 milliseconds
 
 						// Simulate mouse click
 						time = System.currentTimeMillis();
 						MouseEvent click = new MouseEvent(target, MouseEvent.MOUSE_CLICKED, time, 0, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON1);
 						target.dispatchEvent(click);
+						click.consume();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -533,18 +535,21 @@ public class HttpServerPlugin extends Plugin
 
 						MouseEvent press = new MouseEvent(target, MouseEvent.MOUSE_PRESSED, time, InputEvent.META_DOWN_MASK + InputEvent.BUTTON3_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON3);
 						target.dispatchEvent(press);
+						press.consume();
 						Thread.sleep(5); // Add a delay of 5 milliseconds
 
 						// Simulate mouse release
 						time = System.currentTimeMillis();
 						MouseEvent release = new MouseEvent(target, MouseEvent.MOUSE_RELEASED, time, InputEvent.META_DOWN_MASK + InputEvent.BUTTON3_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON3);
 						target.dispatchEvent(release);
+						release.consume();
 						Thread.sleep(5); // Add a delay of 5 milliseconds
 
 						// Simulate mouse click
 						time = System.currentTimeMillis();
 						MouseEvent click = new MouseEvent(target, MouseEvent.MOUSE_CLICKED, time, InputEvent.META_DOWN_MASK + InputEvent.BUTTON3_DOWN_MASK, adjustedX, adjustedY, 1, false, MouseEvent.BUTTON3);
 						target.dispatchEvent(click);
+						click.consume();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
